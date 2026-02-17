@@ -320,7 +320,10 @@ function dvwaHtmlEcho( $pPage ) {
 	$menuBlocks[ 'meta' ] = array();
 	if( dvwaIsLoggedIn() ) {
 		$menuBlocks[ 'meta' ][] = array( 'id' => 'security', 'name' => 'DVWA Security', 'url' => 'security.php' );
-		$menuBlocks[ 'meta' ][] = array( 'id' => 'phpinfo', 'name' => 'PHP Info', 'url' => 'phpinfo.php' );
+		// Only show PHP Info to admin users
+		if( dvwaCurrentUser() == 'admin' ) {
+			$menuBlocks[ 'meta' ][] = array( 'id' => 'phpinfo', 'name' => 'PHP Info', 'url' => 'phpinfo.php' );
+		}
 	}
 	$menuBlocks[ 'meta' ][] = array( 'id' => 'about', 'name' => 'About', 'url' => 'about.php' );
 
