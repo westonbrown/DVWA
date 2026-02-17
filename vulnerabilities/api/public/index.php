@@ -8,11 +8,28 @@ use Src\OrderController;
 use Src\LoginController;
 use Src\Helpers;
 
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: OPTIONS,GET,POST,PUT,DELETE");
-header("Access-Control-Max-Age: 3600");
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+function dvwa_api_set_cors_headers(): void {
+	$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+	$allowlist = getenv('DVWA_API_CORS_ALLOW_ORIGINS');
+
+	// Default deny unless explicitly allowlisted.
+	if ($allowlist !== false && $allowlist !== '') {
+		$allowed = array_filter(array_map('trim', explode(',', $allowlist)));
+		if ($origin !== '' && in_array($origin, $allowed, true)) {
+			header("Access-Control-Allow-Origin: {$origin}");
+			header('Vary: Origin');
+		}
+	}
+
+	header("Content-Type: application/json; charset=UTF-8");
+	header("Access-Control-Allow-Methods: OPTIONS,GET,POST,PUT,DELETE");
+	header("Access-Control-Max-Age: 3600");
+	header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+}
+
+// CORS + common headers
+
+dvwa_api_set_cors_headers();
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri = explode( '/', $uri );
