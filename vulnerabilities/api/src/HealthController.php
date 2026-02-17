@@ -18,6 +18,25 @@ class HealthController
 		$this->command = $command;
 	}
 
+	private function isValidTarget(string $target): bool {
+		$target = trim($target);
+		if ($target === '' || strlen($target) > 253) {
+			return false;
+		}
+
+		// Allow either an IP address or a valid hostname (no schemes/paths).
+		if (filter_var($target, FILTER_VALIDATE_IP)) {
+			return true;
+		}
+
+		// FILTER_VALIDATE_DOMAIN requires PHP 7+; allow hostnames like example.com
+		if (filter_var($target, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)) {
+			return true;
+		}
+
+		return false;
+	}
+
     #[OAT\Post(
 		tags: ["health"],
         path: '/vulnerabilities/api/v2/health/echo',
@@ -83,9 +102,17 @@ class HealthController
 	private function checkConnectivity() {
 		$input = (array) json_decode(file_get_contents('php://input'), TRUE);
 		if (array_key_exists ("target", $input)) {
-			$target = $input['target'];
+			$target = trim((string) $input['target']);
 
-			exec ("ping -c 4 " . $target, $output, $ret_var);
+			if (!$this->isValidTarget($target)) {
+				$response['status_code_header'] = 'HTTP/1.1 400 Bad Request';
+				$response['body'] = json_encode(array("status" => "Invalid target"));
+				return $response;
+			}
+
+			// Escape the target to prevent OS command injection.
+			$escapedTarget = escapeshellarg($target);
+			exec("ping -c 4 " . $escapedTarget, $output, $ret_var);
 
 			if ($ret_var == 0) {
 				$response['status_code_header'] = 'HTTP/1.1 200 OK';
