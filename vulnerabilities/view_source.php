@@ -8,12 +8,23 @@ dvwaPageStartup( array( 'authenticated' ) );
 $page = dvwaPageNewGrab();
 $page[ 'title' ] .= 'Source' . $page[ 'title_separator' ].$page[ 'title' ];
 
-if (array_key_exists ("id", $_GET) && array_key_exists ("security", $_GET)) {
+if( array_key_exists( 'id', $_GET ) && array_key_exists( 'security', $_GET ) ) {
 	$id       = $_GET[ 'id' ];
 	$security = $_GET[ 'security' ];
 
+	// Validate inputs to prevent traversal/arbitrary file read
+	$allowed_security = array( 'low', 'medium', 'high', 'impossible' );
+	if( !in_array( $security, $allowed_security, true ) ) {
+		$security = 'impossible';
+	}
 
-	switch ($id) {
+	if( preg_match( '/^[a-z0-9_]+$/', $id ) !== 1 ) {
+		$page['body'] = "<p>Not found</p>";
+		dvwaSourceHtmlEcho( $page );
+		exit;
+	}
+
+	switch( $id ) {
 		case "fi" :
 			$vuln = 'File Inclusion';
 			break;
@@ -60,12 +71,26 @@ if (array_key_exists ("id", $_GET) && array_key_exists ("security", $_GET)) {
 			$vuln = "Unknown Vulnerability";
 	}
 
-	$source = @file_get_contents( DVWA_WEB_PAGE_TO_ROOT . "vulnerabilities/{$id}/source/{$security}.php" );
+	$baseDir = realpath( DVWA_WEB_PAGE_TO_ROOT . "vulnerabilities/{$id}/source" );
+	if( $baseDir === false ) {
+		$page['body'] = "<p>Not found</p>";
+		dvwaSourceHtmlEcho( $page );
+		exit;
+	}
+
+	$phpCandidate = $baseDir . DIRECTORY_SEPARATOR . "{$security}.php";
+	$phpResolved  = realpath( $phpCandidate );
+	$source       = '';
+	if( $phpResolved !== false && strpos( $phpResolved, $baseDir ) === 0 && is_file( $phpResolved ) ) {
+		$source = @file_get_contents( $phpResolved );
+	}
 	$source = str_replace( array( '$html .=' ), array( 'echo' ), $source );
 
 	$js_html = "";
-	if (file_exists (DVWA_WEB_PAGE_TO_ROOT . "vulnerabilities/{$id}/source/{$security}.js")) {
-		$js_source = @file_get_contents( DVWA_WEB_PAGE_TO_ROOT . "vulnerabilities/{$id}/source/{$security}.js" );
+	$jsCandidate = $baseDir . DIRECTORY_SEPARATOR . "{$security}.js";
+	$jsResolved  = realpath( $jsCandidate );
+	if( $jsResolved !== false && strpos( $jsResolved, $baseDir ) === 0 && is_file( $jsResolved ) ) {
+		$js_source = @file_get_contents( $jsResolved );
 		$js_html = "
 		<h2>vulnerabilities/{$id}/source/{$security}.js</h2>
 		<div id=\"code\">
@@ -97,7 +122,8 @@ if (array_key_exists ("id", $_GET) && array_key_exists ("security", $_GET)) {
 			<input type=\"button\" value=\"Compare All Levels\" onclick=\"window.location.href='view_source_all.php?id=$id'\">
 		</form>
 	</div>\n";
-} else {
+}
+else {
 	$page['body'] = "<p>Not found</p>";
 }
 
