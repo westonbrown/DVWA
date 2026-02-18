@@ -42,6 +42,11 @@ $_DVWA[ 'default_locale' ] = getenv('DEFAULT_LOCALE') ?: 'en';
 #   so this setting lets you turn off authentication.
 $_DVWA[ 'disable_authentication' ] = getenv('DISABLE_AUTHENTICATION') ?: false;
 
+# Safe mode
+#   Optional: when enabled, some modules can switch to safer implementations to reduce
+#   accidental exposure during demos. Example: DVWA_SAFE_MODE=true.
+$_DVWA[ 'safe_mode' ] = filter_var(getenv('DVWA_SAFE_MODE') ?: false, FILTER_VALIDATE_BOOLEAN);
+
 define ('MYSQL', 'mysql');
 define ('SQLITE', 'sqlite');
 
