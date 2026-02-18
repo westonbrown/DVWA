@@ -13,7 +13,10 @@ services:
     # Change `always` to `build` to build from local source
     pull_policy: always
     environment:
-      - DB_SERVER=db
+      - DB_SERVER=${DVWA_DB_SERVER:-db}
+      - DB_DATABASE=${DVWA_DB_DATABASE:-dvwa}
+      - DB_USER=${DVWA_DB_USER:-dvwa}
+      - DB_PASSWORD=${DVWA_DB_PASSWORD}
     depends_on:
       - db
     # Uncomment the next 2 lines to serve local source
@@ -28,10 +31,10 @@ services:
   db:
     image: docker.io/library/mariadb:10
     environment:
-      - MYSQL_ROOT_PASSWORD=dvwa
-      - MYSQL_DATABASE=dvwa
-      - MYSQL_USER=dvwa
-      - MYSQL_PASSWORD=p@ssw0rd
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${DVWA_DB_DATABASE:-dvwa}
+      - MYSQL_USER=${DVWA_DB_USER:-dvwa}
+      - MYSQL_PASSWORD=${DVWA_DB_PASSWORD}
     volumes:
       - dvwa:/var/lib/mysql
     networks:
