@@ -1,10 +1,8 @@
 volumes:
   dvwa:
 
-
 networks:
   dvwa:
-
 
 services:
   dvwa:
@@ -28,10 +26,12 @@ services:
   db:
     image: docker.io/library/mariadb:10
     environment:
-      - MYSQL_ROOT_PASSWORD=dvwa
-      - MYSQL_DATABASE=dvwa
-      - MYSQL_USER=dvwa
-      - MYSQL_PASSWORD=p@ssw0rd
+      # Do NOT hardcode secrets in source. Set these in a local .env file,
+      # CI secrets, or Docker secrets.
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:?set in .env}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-dvwa}
+      - MYSQL_USER=${MYSQL_USER:-dvwa}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:?set in .env}
     volumes:
       - dvwa:/var/lib/mysql
     networks:
