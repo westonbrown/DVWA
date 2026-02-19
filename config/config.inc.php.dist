@@ -18,7 +18,13 @@ $_DVWA = array();
 $_DVWA[ 'db_server' ]   = getenv('DB_SERVER') ?: '127.0.0.1';
 $_DVWA[ 'db_database' ] = getenv('DB_DATABASE') ?: 'dvwa';
 $_DVWA[ 'db_user' ]     = getenv('DB_USER') ?: 'dvwa';
-$_DVWA[ 'db_password' ] = getenv('DB_PASSWORD') ?: 'p@ssw0rd';
+
+# Do not ship insecure default passwords. Require explicit configuration.
+$_DVWA[ 'db_password' ] = getenv('DB_PASSWORD');
+if ($_DVWA['db_password'] === false || $_DVWA['db_password'] === '') {
+    die('DVWA System error - DB_PASSWORD must be set in the environment.');
+}
+
 $_DVWA[ 'db_port']      = getenv('DB_PORT') ?: '3306';
 
 # ReCAPTCHA settings
