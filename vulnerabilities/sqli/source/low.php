@@ -1,56 +1,46 @@
 <?php
 
 if( isset( $_REQUEST[ 'Submit' ] ) ) {
-	// Get input
-	$id = $_REQUEST[ 'id' ];
+    // Get input
+    $id = $_REQUEST[ 'id' ] ?? '';
 
-	switch ($_DVWA['SQLI_DB']) {
-		case MYSQL:
-			// Check database
-			$query  = "SELECT first_name, last_name FROM users WHERE user_id = '$id';";
-			$result = mysqli_query($GLOBALS["___mysqli_ston"],  $query ) or die( '<pre>' . ((is_object($GLOBALS["___mysqli_ston"])) ? mysqli_error($GLOBALS["___mysqli_ston"]) : (($___mysqli_res = mysqli_connect_error()) ? $___mysqli_res : false)) . '</pre>' );
+    switch ($_DVWA['SQLI_DB']) {
+        case MYSQL:
+            // Use prepared statement to prevent SQL injection
+            $stmt = mysqli_prepare($GLOBALS["___mysqli_ston"], 'SELECT first_name, last_name FROM users WHERE user_id = ?');
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, 's', $id);
+                mysqli_stmt_execute($stmt);
+                $result = mysqli_stmt_get_result($stmt);
 
-			// Get results
-			while( $row = mysqli_fetch_assoc( $result ) ) {
-				// Get values
-				$first = $row["first_name"];
-				$last  = $row["last_name"];
+                while( $row = mysqli_fetch_assoc( $result ) ) {
+                    $first = $row['first_name'];
+                    $last  = $row['last_name'];
+                    $safe_id = htmlspecialchars($id, ENT_QUOTES, 'UTF-8');
+                    $html .= "<pre>ID: {$safe_id}<br />First name: {$first}<br />Surname: {$last}</pre>";
+                }
 
-				// Feedback for end user
-				$html .= "<pre>ID: {$id}<br />First name: {$first}<br />Surname: {$last}</pre>";
-			}
+                mysqli_stmt_close($stmt);
+            }
+            break;
 
-			mysqli_close($GLOBALS["___mysqli_ston"]);
-			break;
-		case SQLITE:
-			global $sqlite_db_connection;
+        case SQLITE:
+            global $sqlite_db_connection;
 
-			#$sqlite_db_connection = new SQLite3($_DVWA['SQLITE_DB']);
-			#$sqlite_db_connection->enableExceptions(true);
+            $stmt = $sqlite_db_connection->prepare('SELECT first_name, last_name FROM users WHERE user_id = :id');
+            $stmt->bindValue(':id', $id, SQLITE3_TEXT);
+            $results = $stmt->execute();
 
-			$query  = "SELECT first_name, last_name FROM users WHERE user_id = '$id';";
-			#print $query;
-			try {
-				$results = $sqlite_db_connection->query($query);
-			} catch (Exception $e) {
-				echo 'Caught exception: ' . $e->getMessage();
-				exit();
-			}
-
-			if ($results) {
-				while ($row = $results->fetchArray()) {
-					// Get values
-					$first = $row["first_name"];
-					$last  = $row["last_name"];
-
-					// Feedback for end user
-					$html .= "<pre>ID: {$id}<br />First name: {$first}<br />Surname: {$last}</pre>";
-				}
-			} else {
-				echo "Error in fetch ".$sqlite_db->lastErrorMsg();
-			}
-			break;
-	} 
+            if ($results) {
+                while ($row = $results->fetchArray(SQLITE3_ASSOC)) {
+                    $first = $row['first_name'];
+                    $last  = $row['last_name'];
+                    $safe_id = htmlspecialchars($id, ENT_QUOTES, 'UTF-8');
+                    $html .= "<pre>ID: {$safe_id}<br />First name: {$first}<br />Surname: {$last}</pre>";
+                }
+            }
+            break;
+    }
 }
 
 ?>
